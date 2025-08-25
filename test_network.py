@@ -9,7 +9,7 @@ import requests
 import time
 
 
-def test_port(host, port, service_name):
+def check_port(host, port, service_name):
     """测试端口连接"""
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -28,7 +28,7 @@ def test_port(host, port, service_name):
         return False
 
 
-def test_http_service(url, service_name):
+def check_http_service(url, service_name):
     """测试HTTP服务"""
     try:
         response = requests.get(url, timeout=10)
@@ -66,7 +66,7 @@ def main():
     print("🔌 端口连接测试:")
     port_results = []
     for host, port, service in targets:
-        result = test_port(host, port, service)
+        result = check_port(host, port, service)
         port_results.append(result)
 
     print("\n🌐 HTTP服务测试:")
@@ -80,7 +80,7 @@ def main():
     ]
 
     for url, service in http_targets:
-        result = test_http_service(url, service)
+        result = check_http_service(url, service)
         http_results.append(result)
 
     print("\n📊 测试结果总结:")
