@@ -1,0 +1,43 @@
+{
+  "session_id": "b32dd1e2-dd13-40d0-938b-f492477a4091",
+  "user_id": null,
+  "project_data": {
+    "project_attributes": {
+      "industry": "動物園",
+      "campaign": null,
+      "objective": null,
+      "is_urgent": null,
+      "description": null
+    },
+    "time_budget": {
+      "planning_due_date": null,
+      "campaign_start_date": null,
+      "campaign_end_date": null,
+      "budget": null
+    },
+    "content_strategy": {
+      "planning_types": [
+        "需要進一步分析"
+      ],
+      "media_formats": [
+        "需要進一步分析"
+      ],
+      "audience_lock": null,
+      "audience_behavior": null,
+      "client_materials": null,
+      "client_requests": null
+    },
+    "technical_needs": {
+      "technical_needs": null,
+      "platform_requirements": null,
+      "integration_needs": null
+    },
+    "audience_insights": {
+      "target_demographics": null,
+      "psychographic_profile": null,
+      "behavior_patterns": null,
+      "pain_points": null,
+      "motivations": null,
+      "media_preferences": null
+    },
+    "created_at": 

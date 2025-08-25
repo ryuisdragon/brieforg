@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>企劃需求助手｜對話 × 表單（Glass + Autofill）</title>
+  <style>
+    /* ===== Glassmorphism + Light Theme ===== */
+    *{box-sizing:border-box}
+    :root{
+      --bg:#f5f7fb;
+      --fg:#0b1220;
+      --muted:#5b6577;
+      --border:rgba(20,24,35,.12);
+      --glass:rgba(255,255,255,.6);
+      --glass-strong:rgba(255,255,255,.88);
+      --shadow:0 8px 24px rgba(31,41,55,.08), 0 2px 6px rgba(31,41,55,.06);
+      --primary:#2563eb;
+      --primary-2:#60a5fa;
+      --accent:#22d3ee;
+      --success:#16a34a;
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans TC',Arial,sans-serif;
+      color:var(--fg);
+      background:
+        radial-gradient(1200px 800px at 10% -10%, #dbeafe 0%, rgba(219,234,254,0) 50%),
+        radial-gradient(1000px 700px at 110% 10%, #e0f2fe 0%, rgba(224,242,254,0) 55%),
+        var(--bg);
+    }
+    .topbar{
+      position:sticky;top:0;z-index:10;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px 16px;
+      background:var(--glass);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+      backdrop-filter: blur(14px) saturate(140%);
+      border-bottom:1px solid var(--border);
+      box-shadow:var(--shadow);
+    }
+    .title{font-size:18px;font-weight:800;color:var(--fg);letter-spacing:.2px}
+    .tabs{display:flex;gap:10px}
+    .tab{
+      padding:8px 14px;border-radius:999px;
+      border:1px solid var(--border);
+      background:var(--glass);
+      -webkit-backdrop-filter: blur(12px) saturate(140%);
+      backdrop-filter: blur(12px) saturate(140%);
+      color:var(--fg);cursor:pointer;font-weight:600;
+      transition:all .2s ease;
+    }
+    .tab.active{background:linear-gradient(180deg, var(--glass-strong), rgba(255,255,255,.95)); box-shadow:var(--shadow); border-color:rgba(99,102,241,.18)}
+
+    .wrap{
+      display:grid;grid-template-columns:1.1fr 0.9fr;gap:16px;
+      height:calc(100vh - 64px);padding:16px;
+    }
+    .panel{
+      background:var(--glass);
+      -webkit-backdrop-filter: blur(16px) saturate(160%);
+      backdrop-filter: blur(16px) saturate(160%);
+      border:1px solid var(--border);
+      border-radius:18px;overflow:hidden;display:flex;flex-direction:column;min-height:0;
+      box-shadow:var(--shadow);
+    }
+    .panel h2{
+      font-size:16px;padding:12px 14px;margin:0;
+      border-bottom:1px solid var(--border);color:var(--fg);font-weight:800;
+      background:linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.7));
+      -webkit-backdrop-filter: blur(8px) saturate(160%); backdrop-filter: blur(8px) saturate(160%);
+      display:flex;align-items:center;justify-content:space-between;gap:8px
+    }
+
+    .meta{padding:12px 14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;border-bottom:1px solid var(--border)}
+    .badge{
+      background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.75));
+      -webkit-backdrop-filter: blur(10px) saturate(160%);
+      backdrop-filter: blur(10px) saturate(160%);
+      border:1px solid var(--border);padding:10px 12px;border-radius:14px;color:var(--fg);
+      box-shadow:0 2px 10px rgba(31,41,55,.04);
+    }
+    .progress{height:10px;background:rgba(2,6,23,.06);border:1px solid var(--border);border-radius:999px;overflow:hidden;margin-top:8px}
+    .bar{height:100%;background:linear-gradient(90deg, var(--primary), var(--primary-2));width:0%;transition:width .35s cubic-bezier(.2,.8,.2,1)}
+
+    .msgs{flex:1;min-height:0;overflow-y:auto;padding:16px 14px}
+    .msg{
+      max-width:80%;padding:12px 14px;margin:10px 0;border-radius:18px;line-height:1.65;
+      word-wrap:break-word;border:1px solid var(--border);box-shadow:0 1px 8px rgba(15,23,42,.06);
+      background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.8));
+      -webkit-backdrop-filter: blur(10px) saturate(160%); backdrop-filter: blur(10px) saturate(160%);
+    }
+    .me{
+      margin-left:auto;
+      background:linear-gradient(180deg, rgba(56,189,248,.35), rgba(59,130,246,.28));
+      border:1px solid rgba(59,130,246,.25);
+      color:#0b1220;
+    }
+    .ai{
+      margin-right:auto;
+      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.82));
+      border:1px solid var(--border);
+      color:var(--fg);
+    }
+    .typing{display:inline-flex;gap:5px;align-items:center}
+    .dot{width:7px;height:7px;border-radius:50%;background:#94a3b8;opacity:.5;animation:blink 1.2s infinite}
+    .dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+    @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+    .input{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border);background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.7));-webkit-backdrop-filter: blur(8px) saturate(150%);backdrop-filter: blur(8px) saturate(150%);flex-shrink:0}
+    .input input,.input textarea{
+      flex:1;background:rgba(255,255,255,.95);border:1px solid var(--border);color:var(--fg);padding:12px;border-radius:12px;outline:none;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.6);
+    }
+    .input input::placeholder,.input textarea::placeholder{color:#9aa3b2}
+    .input button{
+      background:linear-gradient(180deg, #34d399, #10b981);color:white;border:none;border-radius:12px;padding:12px 16px;cursor:pointer;font-weight:800;letter-spacing:.2px;box-shadow:0 6px 18px rgba(16,185,129,.25)
+    }
+    .input button:hover{transform:translateY(-1px)}
+
+    .preview{padding:14px 16px;overflow-y:auto;flex:1}
+    .pre-card{
+      background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.82));
+      -webkit-backdrop-filter: blur(12px) saturate(150%);
+      backdrop-filter: blur(12px) saturate(150%);
+      border:1px solid var(--border);border-radius:16px;padding:12px;margin-bottom:12px;box-shadow:var(--shadow)
+    }
+    .row{display:grid;grid-template-columns:140px 1fr;gap:10px;margin:8px 0}
+    .small{font-size:12px;color:var(--muted)}
+
+    .api{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--border);background:linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.7));-webkit-backdrop-filter: blur(8px) saturate(150%);backdrop-filter: blur(8px) saturate(150%)}
+    .api input{flex:1;background:rgba(255,255,255,.95);border:1px solid var(--border);color:var(--fg);padding:10px;border-radius:10px;outline:none}
+    .api .btn{padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--glass);-webkit-backdrop-filter: blur(10px) saturate(150%);backdrop-filter: blur(10px) saturate(150%);color:var(--fg);cursor:pointer}
+    .api .btn:hover{box-shadow:var(--shadow)}
+
+    .hint{padding:10px 16px;border-bottom:1px solid var(--border);background:linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.7));color:var(--muted)}
+
+    .form-wrap{display:flex;flex-direction:column;height:100%}
+    .form-area{padding:12px 14px;display:grid;grid-template-columns:1fr;gap:10px}
+    .kbtns{display:flex;gap:8px;flex-wrap:wrap}
+    .btn-secondary{
+      background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.8));
+      border:1px solid var(--border);color:var(--fg);padding:10px 14px;border-radius:12px;cursor:pointer;box-shadow:0 2px 10px rgba(31,41,55,.04)
+    }
+    .btn-secondary:hover{box-shadow:var(--shadow)}
+    .btn-primary{background:linear-gradient(180deg, #34d399, #10b981);color:white;border:none;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:800;box-shadow:0 6px 18px rgba(16,185,129,.25)}
+
+    .result{padding:12px 14px;overflow:auto;flex:1}
+    .mono{font-family:'JetBrains Mono','SFMono-Regular',Consolas,monospace;white-space:pre-wrap;color:#1f2937}
+
+    .hidden{display:none}
+    .chip{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.92);-webkit-backdrop-filter: blur(8px);backdrop-filter: blur(8px);font-size:12px;color:#334155}
+    .sugs{position:sticky;bottom:0;padding:8px 14px;display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.84));-webkit-backdrop-filter: blur(8px) saturate(150%);backdrop-filter: blur(8px) saturate(150%)}
+    .sug{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.95);-webkit-backdrop-filter: blur(8px);backdrop-filter: blur(8px);font-size:12px;color:#334155;box-shadow:0 1px 6px rgba(15,23,42,.06)}
+    .sug button{padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--glass);cursor:pointer}
+    .sug button:hover{box-shadow:var(--shadow)}
+
+    @media (max-width: 900px){
+      .wrap{grid-template-columns:1fr;height:auto;min-height:100vh}
+      .panel{height:70vh}
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="title">企劃需求助手（Glass + Autofill）</div>
+    <div class="tabs">
+      <button id="tabChat" class="tab active">對話模式</button>
+      <button id="tabForm" class="tab">表單模式</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="panel" id="leftPanel" style="display:flex;flex-direction:column;min-height:0">
+      <h2 id="leftTitle">
+        <span>對話</span>
+      </h2>
+      
+      <!-- Chat mode -->
+      <div id="chatMode" style="display:flex;flex-direction:column;min-height:0;flex:1">
+        <div class="meta">
+          <div class="badge">
+            目前完整性
+            <div class="progress"><div id="bar" class="bar"></div></div>
+            <div class="small" id="scoreText">0%</div>
+          </div>
+          <div class="badge">
+            待補欄位
+            <div class="small" id="missingKeys" style="display:flex;flex-wrap:wrap;gap:6px">尚無</div>
+          </div>
+        </div>
+        <div id="msgs" class="msgs"></div>
+        <div id="sugs" class="sugs"></div>
+        <div class="input">
+          <input id="ipt" placeholder="輸入你的需求或回答問題，按 Enter 送出">
+          <button id="send">送出</button>
+        </div>
+      </div>
+
+      <!-- Form mode -->
+      <div id="formMode" class="hidden form-wrap" style="min-height:0;flex:1">
+        <div class="hint small">小技巧：先丟一句話需求，按「分析需求」，看缺什麼再補充</div>
+        <div class="form-area">
+          <textarea id="requirement" rows="6" placeholder="請描述你的企劃需求..."></textarea>
+          <div class="kbtns">
+            <button class="btn-secondary" onclick="quickFill(0)">淨水器品牌知名度提升</button>
+            <button class="btn-secondary" onclick="quickFill(1)">眼鏡品牌市場分析</button>
+            <button class="btn-secondary" onclick="quickFill(2)">科技新品上市</button>
+            <button class="btn-secondary" onclick="quickFill(3)">簡單企劃需求</button>
+          </div>
+          <div class="kbtns">
+            <button class="btn-primary" onclick="analyze()">分析需求</button>
+          </div>
+          <textarea id="clarify" rows="4" placeholder="（選填）補充澄清回覆..."></textarea>
+          <div class="kbtns">
+            <button class="btn-secondary" onclick="sendClarify()">送出澄清</button>
+          </div>
+        </div>
+        <div id="result" class="result mono small">（結果將顯示於此）</div>
+      </div>
+
+      <div class="api">
+        <input id="api" value="http://192.168.7.75:8000" placeholder="API，例如 http://192.168.7.75:8000">
+        <button id="test" class="btn">測試連線</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>即時彙整預覽</h2>
+      <div id="preview" class="preview">
+        <div class="pre-card small">開始對話或表單分析後，這裡會顯示企劃彙整與提案</div>
+      </div>
+      <div id="unlock" class="pre-card hidden" style="margin:12px">
+        <div class="small">完成度達 95% 可生成完整企劃</div>
+        <button id="gen" class="btn-primary" style="margin-top:8px">生成完整企劃</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- State & helpers ---
+    const api = document.getElementById('api')
+    const tabChat = document.getElementById('tabChat')
+    const tabForm = document.getElementById('tabForm')
+    const chatMode = document.getElementById('chatMode')
+    const formMode = document.getElementById('formMode')
+    const leftTitle = document.getElementById('leftTitle')
+    const preview = document.getElementById('preview')
+    const sugsBox = document.getElementById('sugs')
+    const unlock = document.getElementById('unlock')
+    const genBtn = document.getElementById('gen')
+    let briefSlots = {}
+    let lastCompletionInt = 0
+
+    tabChat.addEventListener('click', () => setMode('chat'))
+    tabForm.addEventListener('click', () => setMode('form'))
+    function setMode(mode){
+      if(mode === 'chat'){
+        tabChat.classList.add('active'); tabForm.classList.remove('active')
+        chatMode.classList.remove('hidden'); formMode.classList.add('hidden')
+        leftTitle.querySelector('span').textContent = '對話'
+      }else{
+        tabForm.classList.add('active'); tabChat.classList.remove('active')
+        formMode.classList.remove('hidden'); chatMode.classList.add('hidden')
+        leftTitle.querySelector('span').textContent = '表單'
+      }
+    }
+
+    // --- Chat mode ---
+    const msgs = document.getElementById('msgs')
+    const ipt = document.getElementById('ipt')
+    const send = document.getElementById('send')
+    const bar = document.getElementById('bar')
+    const missingKeys = document.getElementById('missingKeys')
+    const scoreText = document.getElementById('scoreText')
+
+    let sessionId = null, sending = false
+    const FRIENDLY = {
+      "project_attributes.industry": "產業",
+      "project_attributes.campaign": "活動主題",
+      "project_attributes.is_urgent": "是否急案",
+      "time_budget.planning_due_date": "提案交付日期",
+      "time_budget.campaign_start_date": "活動開始日期",
+      "time_budget.campaign_end_date": "活動結束日期",
+      "time_budget.budget": "預算金額",
+      "content_strategy.planning_types": "企劃類型",
+      "content_strategy.media_formats": "媒體/投放形式",
+      "content_strategy.audience_lock": "受眾鎖定",
+      "content_strategy.audience_behavior": "受眾行為",
+      "content_strategy.client_materials": "客戶素材",
+      "content_strategy.client_requests": "客戶要求",
+      "technical_needs.technical_needs": "技術需求",
+    }
+    let lastCompleteness = 0
+    let lastMissing = []
+    function friendly(keys){ return (keys||[]).map(k => FRIENDLY[k] || k) }
+
+    function addMsg(text, who){
+      const div = document.createElement('div')
+      div.className = 'msg ' + (who === 'me' ? 'me' : 'ai')
+      div.innerText = text
+      msgs.appendChild(div)
+      msgs.scrollTop = msgs.scrollHeight
+    }
+
+    let typingDiv = null
+    function showTyping(){
+      if (typingDiv) return
+      typingDiv = document.createElement('div')
+      typingDiv.className = 'msg ai'
+      typingDiv.innerHTML = '<span class="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>'
+      msgs.appendChild(typingDiv)
+      msgs.scrollTop = msgs.scrollHeight
+    }
+    function hideTyping(){
+      if (typingDiv){ msgs.removeChild(typingDiv); typingDiv = null }
+    }
+
+    function setProgress(score){
+      if (typeof score === 'number') {
+        lastCompleteness = score > 1 ? (score/100) : score
+      }
+      const pct = Math.max(0, Math.min(100, Math.round((lastCompleteness||0)*100)))
+      bar.style.width = pct + '%'; scoreText.textContent = pct + '%'
+    }
+    function setMissing(keys){
+      if (keys && keys.length) lastMissing = keys
+      const arr = friendly(lastMissing)
+      if (arr.length===0){ missingKeys.textContent = '無' }
+      else {
+        missingKeys.textContent = ''
+        arr.forEach(t=>{ const s=document.createElement('span'); s.className='chip'; s.textContent=t; missingKeys.appendChild(s) })
+      }
+    }
+
+    function renderPreviewChat(payload){
+      const { project_data, message, completeness_score, missing_keys } = payload
+      // 處理完整度分數 - 可能在不同位置
+      let score = completeness_score || payload.project_data?.completeness_score || 0
+      if (typeof score === 'number') setProgress(score)
+      if (missing_keys) setMissing(missing_keys)
+      let html = ''
+      if (project_data) {
+        const p = project_data
+        html += '<div class="pre-card">'
+        html += '<div class="row"><div>產業</div><div>' + (p.project_attributes?.industry || '待確認') + '</div></div>'
+        html += '<div class="row"><div>活動主題</div><div>' + (p.project_attributes?.campaign || '待確認') + '</div></div>'
+        html += '<div class="row"><div>緊急程度</div><div>' + (p.project_attributes?.is_urgent ? '急案' : '一般案件') + '</div></div>'
+        html += '<div class="row"><div>提案交付</div><div>' + (p.time_budget?.planning_due_date || '待確認') + '</div></div>'
+        html += '<div class="row"><div>活動期間</div><div>' + (p.time_budget?.campaign_start_date || '-') + ' 至 ' + (p.time_budget?.campaign_end_date || '-') + '</div></div>'
+        html += '<div class="row"><div>預算</div><div>' + (p.time_budget?.budget ?? '待確認') + '</div></div>'
+        const fmts = Array.isArray(p.content_strategy?.media_formats) ? p.content_strategy.media_formats.join(', ') : (p.content_strategy?.media_formats || '待確認')
+        html += '<div class="row"><div>投放形式</div><div>' + fmts + '</div></div>'
+        const types = Array.isArray(p.content_strategy?.planning_types) ? p.content_strategy.planning_types.join(', ') : (p.content_strategy?.planning_types || '待確認')
+        html += '<div class="row"><div>企劃類型</div><div>' + types + '</div></div>'
+        html += '<div class="row"><div>受眾鎖定</div><div>' + (p.content_strategy?.audience_lock || '待確認') + '</div></div>'
+        html += '<div class="row"><div>受眾行為</div><div>' + (p.content_strategy?.audience_behavior || '待確認') + '</div></div>'
+        html += '<div class="row"><div>客戶素材</div><div>' + (p.content_strategy?.client_materials || '待確認') + '</div></div>'
+        html += '<div class="row"><div>客戶要求</div><div>' + (p.content_strategy?.client_requests || '待確認') + '</div></div>'
+        html += '<div class="row"><div>技術需求</div><div>' + (p.technical_needs?.technical_needs || '待確認') + '</div></div>'
+        html += '</div>'
+      }
+      if (message) {
+        const safe = message.replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        html += '<div class="pre-card"><div class="small">企劃提案（即時草稿/或補全後）</div><div style="white-space: pre-wrap">' + safe + '</div></div>'
+      }
+      if (!html) html = '<div class="pre-card small">尚未產出提案，繼續回答問題或點「用假設補齊」</div>'
+      preview.innerHTML = html
+      if (payload.suggestions) renderSuggestions(payload.suggestions)
+      if (typeof payload.completion === 'number') setProgress((payload.completion||0)/100)
+    }
+
+    function mapProjectToSlots(p){
+      const slots = {}
+      const v = (x) => (typeof x === 'string' && x.trim() === '待確認') ? '' : x
+      if (!p) return slots
+      slots.industry = v(p?.project_attributes?.industry || '') || null
+      slots.campaign_theme = v(p?.project_attributes?.campaign || '') || null
+      slots.proposal_due_date = v(p?.time_budget?.planning_due_date || '') || null
+      const cs = v(p?.time_budget?.campaign_start_date || '')
+      const ce = v(p?.time_budget?.campaign_end_date || '')
+      slots.campaign_period = (cs || ce) ? { start: cs||null, end: ce||null } : { start:null, end:null }
+      slots.total_budget = v(p?.time_budget?.budget || '') || null
+      const mf = Array.isArray(p?.content_strategy?.media_formats) ? p.content_strategy.media_formats : (p?.content_strategy?.media_formats ? [p.content_strategy.media_formats] : [])
+      slots.media_formats = mf
+      const pt = Array.isArray(p?.content_strategy?.planning_types) ? (p.content_strategy.planning_types[0]||null) : (p?.content_strategy?.planning_types || null)
+      slots.plan_type = pt
+      const at = v(p?.content_strategy?.audience_lock || '')
+      slots.audience_targeting = at ? [at] : []
+      slots.audience_behavior = v(p?.content_strategy?.audience_behavior || '') || null
+      const ca = v(p?.content_strategy?.client_materials || '')
+      slots.client_assets = ca ? [ca] : []
+      const cr = v(p?.content_strategy?.client_requests || '')
+      slots.client_requirements = cr ? [cr] : []
+      const tr = v(p?.technical_needs?.technical_needs || '')
+      slots.tech_requirements = tr ? [tr] : []
+      slots.risks = []
+      slots.next_steps = []
+      return slots
+    }
+
+    function isFilledSlot(key, slots){
+      const val = slots[key]
+      if (key === 'industry' || key === 'campaign_theme' || key === 'proposal_due_date' || key === 'plan_type' || key === 'audience_behavior') return !!(typeof val === 'string' && val.trim())
+      if (key === 'campaign_period') return !!(val && val.start && val.end)
+      if (key === 'total_budget') {
+        if (typeof val === 'number') return val > 0
+        if (typeof val === 'string') return /\d+/.test(val)
+        return false
+      }
+      if (key === 'media_formats' || key === 'audience_targeting' || key === 'client_assets' || key === 'client_requirements' || key === 'tech_requirements' || key === 'risks' || key === 'next_steps') return Array.isArray(val) && val.length > 0
+      return false
+    }
+
+    function computeMissingFromSlots(slots){
+      const miss = []
+      const push = (k) => miss.push(k)
+      if (!isFilledSlot('industry', slots)) push('project_attributes.industry')
+      if (!isFilledSlot('campaign_theme', slots)) push('project_attributes.campaign')
+      if (!isFilledSlot('proposal_due_date', slots)) push('time_budget.planning_due_date')
+      const cp = slots.campaign_period||{}
+      if (!cp.start) push('time_budget.campaign_start_date')
+      if (!cp.end) push('time_budget.campaign_end_date')
+      if (!isFilledSlot('total_budget', slots)) push('time_budget.budget')
+      if (!isFilledSlot('media_formats', slots)) push('content_strategy.media_formats')
+      if (!isFilledSlot('plan_type', slots)) push('content_strategy.planning_types')
+      if (!isFilledSlot('audience_targeting', slots)) push('content_strategy.audience_lock')
+      if (!isFilledSlot('audience_behavior', slots)) push('content_strategy.audience_behavior')
+      if (!isFilledSlot('client_assets', slots)) push('content_strategy.client_materials')
+      if (!isFilledSlot('client_requirements', slots)) push('content_strategy.client_requests')
+      if (!isFilledSlot('tech_requirements', slots)) push('technical_needs.technical_needs')
+      return miss
+    }
+
+    async function refreshSuggestionsAfterTurn(lastText, project){
+      briefSlots = mapProjectToSlots(project)
+      const body = { messages:[{role:'user', content: lastText||''}], slots: briefSlots, history_limit:8 }
+      try{
+        const res = await fetch(
+          api.value.replace(/\/$/, '') + '/api/chat',
+          {
+            method:'POST',
+            headers: Object.assign(
+              {'Content-Type':'application/json'},
+              (sessionId ? {'X-Session-Id': sessionId} : {})
+            ),
+            body: JSON.stringify(body)
+          }
+        )
+        const data = await res.json()
+        if (res.ok){
+          if (data.slot_writes) briefSlots = { ...briefSlots, ...data.slot_writes }
+          if (Array.isArray(data.preview_blocks) && data.preview_blocks.length){ preview.innerHTML = renderPreviewBlocks(data.preview_blocks) }
+          if (typeof data.completion === 'number') setProgress(data.completion/100)
+          renderSuggestions(data.suggestions||[])
+          const missing = computeMissingFromSlots(briefSlots)
+          setMissing(missing)
+        }
+      }catch{}
+    }
+
+    function renderPreviewBlocks(blocks){
+      if (!Array.isArray(blocks) || blocks.length === 0) return ''
+      let html = '<div class="pre-card">'
+      blocks.forEach(b => {
+        html += '<div class="row"><div>' + (b.title || b.id) + '</div><div>' + (b.content || '') + '</div></div>'
+      })
+      html += '</div>'
+      return html
+    }
+
+    function renderSuggestions(suggestions){
+      sugsBox.innerHTML = ''
+      if (!Array.isArray(suggestions) || suggestions.length === 0){
+        sugsBox.classList.add('hidden');
+        return
+      }
+      sugsBox.classList.remove('hidden')
+      suggestions.forEach(s => {
+        const el = document.createElement('div')
+        el.className = 'sug'
+        const btn = document.createElement('button')
+        btn.textContent = s.label || s.text || '選項'
+        btn.onclick = () => onChipClick(s)
+        el.appendChild(btn)
+        sugsBox.appendChild(el)
+      })
+    }
+
+    function currentBriefSlots(){
+      return { ...briefSlots }
+    }
+
+    async function onChipClick(s){
+      const asUser = s.send_as_user || s.label || s.text || ''
+      if (asUser) addMsg(asUser, 'me')
+      const slots = currentBriefSlots()
+      const writes = {}
+      if (s.slot === 'campaign_period') writes.campaign_period = { start:'', end:'' }
+      else if (s.slot === 'media_formats') writes.media_formats = [s.value || s.label]
+      else if (s.slot === 'audience_targeting') writes.audience_targeting = [s.value || s.label]
+      else if (s.slot === 'client_assets') writes.client_assets = [s.value || s.label]
+      else if (s.slot === 'client_requirements') writes.client_requirements = [s.value || s.label]
+      else if (s.slot === 'tech_requirements') writes.tech_requirements = [s.value || s.label]
+      else if (s.slot) writes[s.slot] = s.value || s.label
+      const body = { messages:[{role:'user', content: asUser}], slots:{ ...slots, ...writes }, history_limit:8 }
+      try{
+        showTyping()
+        const res = await fetch(
+          api.value.replace(/\/$/, '') + '/api/chat',
+          {
+            method:'POST',
+            headers: Object.assign(
+              {'Content-Type':'application/json'},
+              (sessionId ? {'X-Session-Id': sessionId} : {})
+            ),
+            body: JSON.stringify(body)
+          }
+        )
+        const data = await res.json(); hideTyping()
+        if (!res.ok){ addMsg('❌ 請求失敗: ' + (data.detail || res.status), 'ai'); return }
+        if (data.slot_writes) briefSlots = { ...briefSlots, ...data.slot_writes }
+        if (Array.isArray(data.preview_blocks)) preview.innerHTML = renderPreviewBlocks(data.preview_blocks)
+        setProgress((data.completion || 0)/100)
+        renderSuggestions(data.suggestions||[])
+        if (data.next_question) addMsg(data.next_question, 'ai')
+        checkUnlock(data.completion || 0)
+      }catch(err){ hideTyping(); addMsg('❌ 請求失敗：' + err.message, 'ai') }
+    }
+
+    function checkUnlock(completionInt){
+      lastCompletionInt = completionInt || 0
+      if (lastCompletionInt >= 95){ unlock.classList.remove('hidden') }
+      else { unlock.classList.add('hidden') }
+    }
+
+    genBtn.addEventListener('click', async () => {
+      try{
+        const body = { slots: currentBriefSlots(), preview: [] }
+        const res = await fetch(api.value.replace(/\/$/, '') + '/api/report', {
+          method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+        })
+        const data = await res.json()
+        if (!res.ok){ alert('❌ 生成失敗: ' + (data.detail || res.status)); return }
+        let html = ''
+        html += '<div class="pre-card"><div class="small">Brief Markdown</div><div class="mono" style="white-space: pre-wrap">' + (data.brief_markdown || '').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div></div>'
+        html += '<div class="pre-card"><div class="small">Full Plan Markdown</div><div class="mono" style="white-space: pre-wrap">' + (data.full_markdown || '').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div></div>'
+        preview.innerHTML = html
+      }catch(err){ alert('❌ 生成失敗: ' + err.message) }
+    })
+
+    async function chatSend(){
+      if (sending) return
+      const text = ipt.value.trim()
+      if (!text) return
+      addMsg(text, 'me'); ipt.value = ''; sending = true
+      try {
+        const payload = { message: text, session_id: sessionId || null }
+        showTyping()
+        const res = await fetch(api.value.replace(/\/$/, '') + '/chat/turn', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+        const data = await res.json()
+        hideTyping()
+        if (!res.ok){ 
+          let errorMsg = '❌ 伺服器錯誤: '
+          if (data.detail) {
+            if (Array.isArray(data.detail)) {
+              errorMsg += data.detail.map(d => d.msg || d).join(', ')
+            } else {
+              errorMsg += data.detail
+            }
+          } else {
+            errorMsg += res.status
+          }
+          addMsg(errorMsg, 'ai'); return 
+        }
+        sessionId = data.session_id
+        addMsg(data.message, 'ai')
+        renderPreviewChat(data)
+        refreshSuggestionsAfterTurn(text, data.project_data)
+        if (data.status === 'completed') addMsg('已完成，歡迎繼續提出新需求開始新對話', 'ai')
+      } catch(err){ hideTyping(); addMsg('❌ 連線或伺服器錯誤：' + err.message, 'ai') }
+      finally{ sending = false; ipt.focus() }
+    }
+    send.addEventListener('click', chatSend)
+    ipt.addEventListener('keydown', e => { if (e.key === 'Enter') chatSend() })
+
+    // greeting
+    addMsg('嗨，我是你的企劃助理，先用一句話描述你的專案，我會一步一步把缺的資訊問齊。', 'ai')
+    // 初始列出必填（以固定清單），避免顯示「無」
+    setMissing([
+      'project_attributes.industry',
+      'project_attributes.campaign',
+      'time_budget.planning_due_date',
+      'time_budget.campaign_start_date',
+      'time_budget.campaign_end_date',
+      'time_budget.budget',
+      'content_strategy.media_formats',
+      'content_strategy.planning_types',
+      'content_strategy.audience_lock',
+      'content_strategy.audience_behavior',
+      'content_strategy.client_materials',
+      'content_strategy.client_requests',
+      'technical_needs.technical_needs'
+    ])
+
+    // --- Form mode ---
+    const requirement = document.getElementById('requirement')
+    const clarify = document.getElementById('clarify')
+    const result = document.getElementById('result')
+    const examples = [
+      '淨水器品牌知名度提升企劃，目標是AWARE提升與官網流量成長，預算200萬，三個月內完成，受眾30-45歲家庭主婦與健康意識族群，投放包含原生內容與影音，策略提案與創意版位製作，技術需求包含數位媒體投放系統、數據追蹤分析、科技媒體合作整合',
+      '眼鏡品牌市場分析與廣宣企劃，目的是前三名的品牌聲量，預算300萬，六個月，受眾18-35歲學生與上班族，投放包含社群、影音與部落客合作，需要策略提案、創意版位製作，技術需求包含品牌聲量監測系統、口碑分析工具、數據視覺化平台',
+      '我們是科技公司，需要為新產品上市做行銷企劃，預算50萬，需要在3個月內完成，包含策略提案和創意製作，目標受眾是25-35歲的年輕上班族，主要投放數位媒體，活動開始日期是2024年1月1日，結束日期是2024年3月31日，企劃截止日期是2023年12月15日，內容策略包含SEO文章、短影音製作、社群貼文與互動，交付包含策略提案、創意版位製作、文案撰寫，技術需求包含響應式網頁設計和社群媒體整合',
+      '需要做行銷企劃'
+    ]
+    function quickFill(i){ requirement.value = examples[i] }
+
+    function renderPreviewForm(data){
+      renderPreviewChat({
+        project_data: data.project_data,
+        message: data.message,
+        completeness_score: data.project_data?.completeness_score || 0,
+        missing_keys: data.missing_keys || []
+      })
+    }
+    function showResult(obj){
+      try{ result.textContent = JSON.stringify(obj, null, 2) }catch{ result.textContent = String(obj) }
+    }
+
+    async function analyze(){
+      const req = requirement.value.trim()
+      if (!req){ alert('先輸入需求'); return }
+      try{
+        // 如果沒有 sessionId，創建一個新的
+        if (!sessionId) {
+          sessionId = 'form_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+        }
+        const res = await fetch(api.value.replace(/\/$/, '') + '/chat/turn', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: req, session_id: sessionId }) })
+        const data = await res.json()
+        if (!res.ok){ alert('❌ 伺服器錯誤: ' + (data.detail || res.status)); return }
+        sessionId = data.session_id // 更新 sessionId
+        showResult(data); renderPreviewForm(data)
+      }catch(err){ alert('請求失敗: ' + err.message) }
+    }
+
+    async function sendClarify(){
+      const ctx = clarify.value.trim()
+      if (!ctx){ alert('請輸入要補充的澄清內容'); return }
+      try{
+        // 確保有 sessionId
+        if (!sessionId) {
+          alert('請先進行需求分析')
+          return
+        }
+        const res = await fetch(api.value.replace(/\/$/, '') + '/chat/turn', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: ctx, session_id: sessionId }) })
+        const data = await res.json()
+        if (!res.ok){ alert('❌ 伺服器錯誤: ' + (data.detail || res.status)); return }
+        sessionId = data.session_id // 更新 sessionId
+        showResult(data); renderPreviewForm(data)
+      }catch(err){ alert('請求失敗: ' + err.message) }
+    }
+
+    // Health check
+    document.getElementById('test').addEventListener('click', async () => {
+      try{
+        const res = await fetch(api.value.replace(/\/$/, '') + '/health')
+        const data = await res.json()
+        alert('✅ 連線正常：' + JSON.stringify(data))
+      }catch(err){ alert('❌ 測試失敗：' + err.message) }
+    })
+  
+    // 自动检测API地址
+    function autoDetectAPI() {
+        const currentHost = window.location.hostname;
+        const currentPort = window.location.port;
+        
+        if (currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
+            // 如果是从外部IP访问，自动设置API地址
+            const apiInput = document.getElementById('api');
+            const newAPI = `http://${currentHost}:8000`;
+            apiInput.value = newAPI;
+            console.log('自动设置API地址:', newAPI);
+        }
+    }
+    
+    // 页面加载完成后自动检测
+    document.addEventListener('DOMContentLoaded', autoDetectAPI);
+    
+  </script>
+</body>
+</html>

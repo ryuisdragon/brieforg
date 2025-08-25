@@ -1,0 +1,41 @@
+{
+  "session_id": "9faf1657-e545-4a47-81a5-a51fa7b44548",
+  "user_id": null,
+  "project_data": {
+    "project_attributes": {
+      "industry": "科技",
+      "campaign": "品牌宣傳",
+      "is_urgent": null,
+      "description": null
+    },
+    "time_budget": {
+      "planning_due_date": "下週五",
+      "campaign_start_date": "下個月初",
+      "campaign_end_date": "下個月底",
+      "budget": 500000
+    },
+    "content_strategy": {
+      "planning_types": null,
+      "media_formats": [
+        "Facebook",
+        "Instagram"
+      ],
+      "audience_lock": "25-35歲的科技愛好者",
+      "audience_behavior": "經常瀏覽科技新聞和社群媒體",
+      "client_materials": "現有的品牌形象素材",
+      "client_requests": "強調產品的創新性"
+    },
+    "technical_needs": {
+      "technical_needs": null,
+      "platform_requirements": null,
+      "integration_needs": null
+    },
+    "audience_insights": {
+      "target_demographics": null,
+      "psychographic_profile": null,
+      "behavior_patterns": null,
+      "pain_points": null,
+      "motivations": null,
+      "media_preferences": null
+    },
+    "created_at": 

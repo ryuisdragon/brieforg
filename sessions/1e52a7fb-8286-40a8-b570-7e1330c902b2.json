@@ -1,0 +1,39 @@
+{
+  "session_id": "1e52a7fb-8286-40a8-b570-7e1330c902b2",
+  "user_id": null,
+  "project_data": {
+    "project_attributes": {
+      "industry": "科技業",
+      "campaign": "品牌知名度提升",
+      "objective": null,
+      "is_urgent": null,
+      "description": null
+    },
+    "time_budget": {
+      "planning_due_date": null,
+      "campaign_start_date": null,
+      "campaign_end_date": null,
+      "budget": null
+    },
+    "content_strategy": {
+      "planning_types": null,
+      "media_formats": null,
+      "audience_lock": null,
+      "audience_behavior": null,
+      "client_materials": null,
+      "client_requests": null
+    },
+    "technical_needs": {
+      "technical_needs": null,
+      "platform_requirements": null,
+      "integration_needs": null
+    },
+    "audience_insights": {
+      "target_demographics": null,
+      "psychographic_profile": null,
+      "behavior_patterns": null,
+      "pain_points": null,
+      "motivations": null,
+      "media_preferences": null
+    },
+    "created_at": 
