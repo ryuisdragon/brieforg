@@ -6,7 +6,7 @@
 
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from enum import Enum
 
 
@@ -118,9 +118,13 @@ class QuickReply(BaseModel):
 
 class ChatTurnRequest(BaseModel):
     """聊天回合請求"""
-
-    message: str
+    message: Optional[str] = None
     session_id: Optional[str]
+    intent: Optional[str] = Field(None, description="意圖名稱")
+    params: Optional[Dict[str, Any]] = Field(None, description="意圖參數")
+    attachments: Optional[List[Dict[str, Any]]] = Field(
+        None, description="附件資訊"
+    )
     project_data: Optional[ProjectData] = Field(None, description="現有專案數據")
 
 
@@ -137,6 +141,30 @@ class ChatTurnResponse(BaseModel):
     next_action: Optional[str] = Field(None, description="建議的下一步動作")
     is_complete: bool = Field(False, description="專案是否完整")
     completeness_score: float = Field(0.0, description="完整度分數")
+    data: Optional[Dict[str, Any]] = Field(None, description="額外資料")
+
+
+class Section(BaseModel):
+    id: str
+    title: str
+    body: str
+
+
+class SixChapterReport(BaseModel):
+    sections: List[Section]
+
+    @validator("sections")
+    def must_have_six(cls, v: List[Section]):
+        ids = [s.id for s in v]
+        assert ids == [
+            "macro",
+            "buzz",
+            "competitors",
+            "brand",
+            "audience",
+            "insight",
+        ]
+        return v
 
 
 class SessionData(BaseModel):

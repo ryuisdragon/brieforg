@@ -885,9 +885,12 @@ async def chat_turn(request: ChatTurnRequest):
 
         # 處理聊天回合
         response = await planning_agent.process_chat_turn(
-            user_message=request.message,
+            user_message=request.message or "",
             session_id=request.session_id,
             project_data=project_data,
+            intent=request.intent,
+            params=request.params,
+            attachments=request.attachments,
         )
 
         # 更新會話

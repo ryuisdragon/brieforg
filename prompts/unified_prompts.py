@@ -161,3 +161,22 @@ class UnifiedPrompts:
                         formatted.append(f"  - {key}: {value}")
 
         return "\n".join(formatted) if formatted else "專案數據不完整"
+
+
+def build_six_chapter_prompt(vars: dict) -> dict:
+    sys = (
+        "你是媒體廣告資深企劃與策略敘事者，\n"
+        "嚴禁臆測，六章輸出，每句關鍵主張句尾需含〔來源｜YYYY-MM 或 YYYY-MM-DD〕，\n"
+        "章節必為段落非條列，句長控制，含因果橋接與可比較數字，台灣優先並標註可比性。"
+    )
+    tool = (
+        "請輸出 JSON，字段為\n"
+        "sections=[{id,title,body}], 其中 body 為可直接貼進 PPT 的中文段落，\n"
+        "段內括號提供圖表或設計建議，引用需在同句句尾。"
+    )
+    user = (
+        f"品類={vars.get('category')}，品牌聚焦={vars.get('brand_focus')}，\n"
+        f"觀測窗={vars.get('window')}，語系=zh-TW，\n"
+        "可用證據會由 EvidenceProvider 插入到 context.evidence。"
+    )
+    return {"system": sys, "tool": tool, "user": user}

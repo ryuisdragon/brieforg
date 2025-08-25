@@ -6,20 +6,62 @@
 
 import json
 import logging
+import os
 from typing import Any, Dict, List
 
-from models.unified_models import ProjectData, QuickReply, ToolResult, AudienceInsights
-from prompts.unified_prompts import UnifiedPrompts
+from models.unified_models import (
+    ProjectData,
+    QuickReply,
+    ToolResult,
+    AudienceInsights,
+    SixChapterReport,
+)
+from prompts.unified_prompts import UnifiedPrompts, build_six_chapter_prompt
 
 logger = logging.getLogger(__name__)
+
+
+class EvidenceProvider:
+    """簡單的證據提供者"""
+
+    def collect(self, ctx: Dict[str, Any]) -> Dict[str, Any]:
+        return {"evidence": ctx.get("attachments", [])}
+
+
+class SixChapterReportTool:
+    """六章報告工具"""
+
+    name = "six_chapter_report"
+
+    def __init__(self, llm, evidence_provider: EvidenceProvider):
+        self.llm = llm
+        self.evidence = evidence_provider
+
+    def execute(self, ctx: Dict[str, Any]) -> Dict[str, Any]:
+        params = getattr(ctx, "params", None) or ctx.get("params", {})
+        data = self.evidence.collect(ctx)
+        prompt = build_six_chapter_prompt(params)
+        resp = self.llm.generate_json(prompt, data)
+        report = SixChapterReport.parse_obj(resp)
+        strict = os.getenv("STRICT_CITATION") == "1"
+        report = self._postfix(report, strict=strict)
+        return {"report": report.dict(), "preview": {"completeness": 0.9}}
+
+    def _postfix(self, report: SixChapterReport, strict: bool = False) -> SixChapterReport:
+        # TODO: implement citation and style fixes when strict is True
+        return report
 
 
 class ToolExecutor:
     """統一的工具執行器"""
 
-    def __init__(self, llm_client):
+    def __init__(self, llm_client, evidence_provider: Any = None):
         """初始化工具執行器"""
         self.llm_client = llm_client
+        self.evidence_provider = evidence_provider or EvidenceProvider()
+        self.six_chapter_tool = SixChapterReportTool(
+            llm_client, self.evidence_provider
+        )
 
     async def execute_tool(self, tool_name: str, **kwargs) -> ToolResult:
         """執行指定的工具"""
@@ -34,6 +76,15 @@ class ToolExecutor:
                 return await self.generate_content_strategy(**kwargs)
             elif tool_name == "extract_project_data":
                 return await self.extract_project_data(**kwargs)
+            elif tool_name == "six_chapter_report":
+                ctx = kwargs.get("ctx", {})
+                data = self.six_chapter_tool.execute(ctx)
+                return ToolResult(
+                    success=True,
+                    data=data,
+                    message="六章報告生成成功",
+                    metadata={"tool": self.six_chapter_tool.name},
+                )
             else:
                 return ToolResult(
                     success=False,

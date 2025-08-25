@@ -37,6 +37,9 @@ class UnifiedPlanningAgent:
         user_message: str,
         session_id: str,
         project_data: Optional[ProjectData] = None,
+        intent: Optional[str] = None,
+        params: Optional[Dict[str, Any]] = None,
+        attachments: Optional[List[Dict[str, Any]]] = None,
     ) -> ChatTurnResponse:
         """處理聊天回合"""
         try:
@@ -51,6 +54,24 @@ class UnifiedPlanningAgent:
                 message_type=MessageType.TEXT,
             )
             self.conversation_history.append(user_chat_message)
+
+            if intent == "six_chapter_report" or self._is_six_chapter_query(user_message):
+                result = await self.tool_executor.execute_tool(
+                    "six_chapter_report",
+                    ctx={
+                        "params": params or {},
+                        "attachments": attachments or [],
+                    },
+                )
+                return ChatTurnResponse(
+                    message="六章報告已生成",
+                    session_id=session_id,
+                    project_data=project_data,
+                    quick_replies=[],
+                    completeness_score=project_data.completeness_score,
+                    is_complete=False,
+                    data=result.data,
+                )
 
             # 分析用戶輸入並決定下一步行動
             next_action = await self._determine_next_action(user_message, project_data)
@@ -497,6 +518,19 @@ class UnifiedPlanningAgent:
 
         message_lower = message.lower().strip()
         return any(greeting in message_lower for greeting in simple_greetings)
+
+    def _is_six_chapter_query(self, message: str) -> bool:
+        keywords = [
+            "六章",
+            "宏觀",
+            "聲量",
+            "競品",
+            "品牌",
+            "受眾",
+            "洞察",
+        ]
+        ml = message.lower()
+        return any(k in ml for k in keywords)
 
     def _has_sufficient_project_data(self, project_data: ProjectData) -> bool:
         """檢查是否有足夠的專案數據進行分析"""
